@@ -1,9 +1,10 @@
+#!/usr/bin/python3
 import requests
 import os
 import datetime
 
 class HTB_CTF:
-    def __init__(self, email, password, ctfID):
+    def __init__(self, ctfID, email, password):
         self.baseUrl = "https://ctf-api.hackthebox.com/api"
         self.accessToken = self.login(email, password)
         self.categories = self.getCategories()
@@ -13,7 +14,7 @@ class HTB_CTF:
         self.createMarkdownFile()
 
     def login(self, email, password):
-        url = self.baseUrl + "/login"
+        url = f"{self.baseUrl}/login"
         res = requests.post(url, data={"email": email, "password": password, "remember": True})
         return res.json()["message"]["access_token"]
 
@@ -28,7 +29,9 @@ class HTB_CTF:
         return self.htbGetRequest(f"/ctf/{ctfID}")
 
     def setCtfFolderPath(self, ctfName):
-        ctfFolderName = f"htb_{ctfName}_{str(datetime.datetime.now().year)}".lower().replace(" ", "_")
+        timeNow = datetime.datetime.now()
+        timeNowMonthYear = f"{str(timeNow.year)}{str(timeNow.month)}"
+        ctfFolderName = f"{timeNowMonthYear}_htb_{ctfName}".lower().replace(" ", "_")
         self.folderPath = f"./CTFS/{ctfFolderName}"
         try:
             os.makedirs(f"{self.folderPath}/files")
@@ -57,7 +60,7 @@ class HTB_CTF:
                 markdownText += f"| Description | {chall['description']} |\n"
                 markdownDownloadText = f"| File | - |\n\n"
                 if chall['filename'] != "":
-                    markdownDownloadText = f"| File | [Download](./files/{chall['filename']}) |\n\n"
+                    markdownDownloadText = f"| File | [{chall['filename']}](./files/{chall['filename']}) |\n\n"
                 markdownText += markdownDownloadText
                 markdownText += f"#### Solution\n\n"
         ctfFile = open(f"{self.folderPath}/README.md", "w")
@@ -68,8 +71,8 @@ class HTB_CTF:
         self.workableChalls = {}
         for chall in self.ctf['challenges']:
             challCatID = chall['challenge_category_id']
-            #if chall['filename'] != "":
-                #self.downloadChallengeFile(chall)
+            if chall['filename'] != "":
+                self.downloadChallengeFile(chall)
             for category in self.categories:
                 if category['id'] == challCatID:
                     if category['name'] not in self.workableChalls:
