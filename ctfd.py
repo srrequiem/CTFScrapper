@@ -54,7 +54,8 @@ class CTFd_CTF:
     def downloadChallengeFile(self, challenge):
         url = urlparse(challenge['url'])
         realFilename = os.path.basename(url.path)
-        challFile = open(f"{self.folderPath}/files/{challenge['filename']}_{realFilename}".lower().replace(" ", "_"), "wb")
+        cleanFilename = f"{challenge['filename']}_{realFilename}".lower().replace(" ", "_")
+        challFile = open(f"{self.folderPath}/files/{cleanFilename}", "wb")
         challFile.write(self.getChallengeDownload(challenge['url']))
         challFile.close()
 
