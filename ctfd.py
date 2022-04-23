@@ -27,9 +27,9 @@ class CTFd_CTF:
     def getRequest(self, url):
         res = self.session.get(f"{self.baseUrl}{url}")
         resJson = res.json()
-        if resJson["success"] is True:
-            return resJson["data"]
-        raise Exception("[!] Something went wrong making get request!")
+        if "success" not in resJson:
+            raise Exception("[!] Something went wrong making get request!")
+        return resJson["data"]
 
     def getChallenges(self):
         return self.getRequest("/api/v1/challenges")
@@ -54,7 +54,8 @@ class CTFd_CTF:
     def downloadChallengeFile(self, challenge):
         url = urlparse(challenge['url'])
         realFilename = os.path.basename(url.path)
-        cleanFilename = f"{challenge['filename']}_{realFilename}".lower().replace(" ", "_")
+        charsToRemove = "/ "
+        cleanFilename = f"{challenge['filename']}_{realFilename}".lower().translate({ord(c): "_" for c in charsToRemove})
         challFile = open(f"{self.folderPath}/files/{cleanFilename}", "wb")
         challFile.write(self.getChallengeDownload(challenge['url']))
         challFile.close()
