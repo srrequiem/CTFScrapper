@@ -4,79 +4,76 @@ import os
 import datetime
 
 class HTB_CTF:
-    def __init__(self, ctfID, email, password):
-        self.baseUrl = "https://ctf-api.hackthebox.com/api"
-        self.accessToken = self.login(email, password)
-        self.categories = self.getCategories()
-        self.ctf = self.getCtfInfo(ctfID)
-        self.setCtfFolderPath(self.ctf['name'])
-        self.setWorkableChalls()
-        self.createMarkdownFile()
+    def __init__(self, ctf_id, user="", password="", token=""):
+        self.base_url = "https://ctf.hackthebox.com/api"
+        if not token:
+            token = input("Bearer token: ")
+        self.token = token
+        self.categories = self._get_categories()
+        self.ctf = self._get_ctf_info(ctf_id)
+        self._set_ctf_folderpath(self.ctf['name'])
+        self._set_workable_challs()
+        self._create_markdown_file()
 
-    def login(self, email, password):
-        url = f"{self.baseUrl}/login"
-        res = requests.post(url, data={"email": email, "password": password, "remember": True})
-        return res.json()["message"]["access_token"]
-
-    def htbGetRequest(self, url):
-        res = requests.get(self.baseUrl + url, headers={'Authorization': f'Bearer {self.accessToken}'})
+    def _htb_get_request(self, url):
+        res = requests.get(self.base_url + url, headers={'Authorization': f'Bearer {self.token}'})
         return res.json()
 
-    def getCategories(self):
-        return self.htbGetRequest("/challengeCategories")
+    def _get_categories(self):
+        return self._htb_get_request("/public/challengeCategories")
 
-    def getCtfInfo(self, ctfID):
-        return self.htbGetRequest(f"/ctf/{ctfID}")
+    def _get_ctf_info(self, ctf_id):
+        return self._htb_get_request(f"/ctf/{ctf_id}")
 
-    def setCtfFolderPath(self, ctfName):
-        timeNow = datetime.datetime.now()
-        timeNowMonthYear = f"{str(timeNow.year)}{str(timeNow.month)}"
-        ctfFolderName = f"{timeNowMonthYear}_htb_{ctfName}".lower().replace(" ", "_")
-        self.folderPath = f"./CTFS/{ctfFolderName}"
+    def _set_ctf_folderpath(self, ctf_name):
+        time_now = datetime.datetime.now()
+        time_now_month_year = f"{str(time_now.year)}{str(time_now.month)}{str(time_now.day)}"
+        ctf_foldername = f"{time_now_month_year}_htb_{ctf_name}".lower().replace(" ", "_")
+        self.folder_path = f"./CTFS/{ctf_foldername}"
         try:
-            os.makedirs(f"{self.folderPath}/files")
+            os.makedirs(f"{self.folder_path}/files")
         except FileExistsError:
             pass
 
-    def getChallengeDownload(self, challID):
-        res = requests.get(f"{self.baseUrl}/challenge/download/{challID}", headers={'Authorization': f'Bearer {self.accessToken}'})
+    def _get_challenge_download(self, chall_id):
+        res = requests.get(f"{self.base_url}/challenge/download/{chall_id}", headers={'Authorization': f'Bearer {self.token}'})
         return res.content
 
-    def downloadChallengeFile(self, challenge):
-        challFile = open(f"{self.folderPath}/files/{challenge['filename']}", "wb")
-        challFile.write(self.getChallengeDownload(challenge['id']))
-        challFile.close()
+    def _download_challege_file(self, challenge):
+        chall_file = open(f"{self.folder_path}/files/{challenge['filename']}", "wb")
+        chall_file.write(self._get_challenge_download(challenge['id']))
+        chall_file.close()
 
-    def createMarkdownFile(self):
-        markdownText = f"# {self.ctf['name']}\n\n"
-        for markdownCategory in self.workableChalls.keys():
-            markdownText += f"## {markdownCategory}\n\n"
-            for chall in self.workableChalls[markdownCategory]:
-                markdownText += f"### {chall['name']}\n\n"
-                markdownText += f"#### Stats\n\n"
-                markdownText += f"| Attribute | Info |\n"
-                markdownText += f"|---|---|\n"
-                markdownText += f"| Difficulty | {chall['difficulty']} |\n"
-                markdownText += f"| Description | {chall['description']} |\n"
-                markdownDownloadText = f"| File | - |\n\n"
+    def _create_markdown_file(self):
+        md_text = f"# {self.ctf['name']}\n\n"
+        for md_category in self.workable_challs.keys():
+            md_text += f"## {md_category}\n\n"
+            for chall in self.workable_challs[md_category]:
+                md_text += f"### {chall['name']}\n\n"
+                md_text += f"#### Stats\n\n"
+                md_text += f"| Attribute | Info |\n"
+                md_text += f"|---|---|\n"
+                md_text += f"| Difficulty | {chall['difficulty']} |\n"
+                md_text += f"| Description | {chall['description']} |\n"
+                md_download_text = f"| File | - |\n\n"
                 if chall['filename'] != "":
-                    markdownDownloadText = f"| File | [{chall['filename']}](./files/{chall['filename']}) |\n\n"
-                markdownText += markdownDownloadText
-                markdownText += f"#### Solution\n\n"
-        ctfFile = open(f"{self.folderPath}/README.md", "w")
-        ctfFile.write(markdownText)
-        ctfFile.close()
+                    md_download_text = f"| File | [{chall['filename']}](./files/{chall['filename']}) |\n\n"
+                md_text += md_download_text
+                md_text += f"#### Solution\n\n"
+        ctf_file = open(f"{self.folder_path}/README.md", "w")
+        ctf_file.write(md_text)
+        ctf_file.close()
 
-    def setWorkableChalls(self):
-        self.workableChalls = {}
+    def _set_workable_challs(self):
+        self.workable_challs = {}
         for chall in self.ctf['challenges']:
-            challCatID = chall['challenge_category_id']
+            chall_cat_id = chall['challenge_category_id']
             if chall['filename'] != "":
-                self.downloadChallengeFile(chall)
+                self._download_challege_file(chall)
             for category in self.categories:
-                if category['id'] == challCatID:
-                    if category['name'] not in self.workableChalls:
-                        self.workableChalls[category['name']] = []
-                    cleanChall = { "name": chall['name'], "difficulty": chall['difficulty'], "description": chall['description'], "filename": chall['filename']}
-                    self.workableChalls[category['name']].append(cleanChall)
+                if category['id'] == chall_cat_id:
+                    if category['name'] not in self.workable_challs:
+                        self.workable_challs[category['name']] = []
+                    clean_chall = { "name": chall['name'], "difficulty": chall['difficulty'], "description": chall['description'], "filename": chall['filename']}
+                    self.workable_challs[category['name']].append(clean_chall)
                     break
