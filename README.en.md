@@ -29,7 +29,7 @@ pip install -r requirements.txt
 ```bash
 python ctfscrapper.py <url|ctf_id> <username> <password>
 
-python ctfscrapper.py <url|ctf_id> -T <token>
+python ctfscrapper.py <url|ctf_id> -t <token>
 ```
 
 Currently only CTFs under this platforms are supported:
